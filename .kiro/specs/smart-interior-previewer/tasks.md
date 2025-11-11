@@ -317,6 +317,10 @@
 
 
 
+
+
+
+
   - Verify next.config.js is properly configured for production
   - Test production build locally with `npm run build` and `npm start`
   - Ensure all environment variables are documented (none required for MVP)
