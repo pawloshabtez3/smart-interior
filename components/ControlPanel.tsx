@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { ROOM_TYPES } from '@/lib/constants';
 import type { RoomType } from '@/lib/store';
+import ThemeSelector from './ThemeSelector';
+import LightingSelector from './LightingSelector';
 
 interface ControlPanelProps {
   className?: string;
@@ -23,6 +25,7 @@ const scaleIn = {
 
 export default function ControlPanel({ className = '' }: ControlPanelProps) {
   const { roomType, setRoomType } = useStore();
+  
   return (
     <motion.div
       initial="initial"
@@ -49,7 +52,7 @@ export default function ControlPanel({ className = '' }: ControlPanelProps) {
         max-lg:max-h-[60vh] max-lg:overflow-y-auto
       `}
     >
-      <div className="space-y-6">
+      <div className="space-y-8">
         <h2 className="text-xl font-semibold text-white mb-4">
           Customize Your Space
         </h2>
@@ -99,6 +102,18 @@ export default function ControlPanel({ className = '' }: ControlPanelProps) {
             ))}
           </div>
         </div>
+
+        {/* Divider */}
+        <div className="border-t border-white/20" />
+
+        {/* Theme Selector (Style & Color) */}
+        <ThemeSelector />
+
+        {/* Divider */}
+        <div className="border-t border-white/20" />
+
+        {/* Lighting Selector */}
+        <LightingSelector />
       </div>
     </motion.div>
   );

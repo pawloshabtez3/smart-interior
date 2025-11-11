@@ -178,7 +178,12 @@
   - Style with icon cards and Tailwind CSS
   - _Requirements: 5.1, 5.2, 5.4_
 
-- [ ] 14. Integrate all selectors into ControlPanel
+- [x] 14. Integrate all selectors into ControlPanel
+
+
+
+
+
   - Import and render room type selector in ControlPanel
   - Import and render ThemeSelector component
   - Import and render LightingSelector component
