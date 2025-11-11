@@ -4,7 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, useGLTF } from '@react-three/drei';
 import { Suspense, useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
-import { LightingConfig } from '@/lib/constants';
+import { LightingConfig, MaterialConfig, ThemeColors, StylePreset, ColorTheme } from '@/lib/constants';
 
 interface RoomCanvasProps {
   roomType: 'living-room' | 'bedroom' | 'office';
@@ -13,9 +13,101 @@ interface RoomCanvasProps {
   lightingMood: 'morning' | 'evening' | 'night';
 }
 
-function RoomModel({ roomType }: { roomType: string }) {
+interface MaterialState {
+  color: THREE.Color;
+  roughness: number;
+  metalness: number;
+}
+
+function RoomModel({ 
+  roomType, 
+  stylePreset, 
+  colorTheme 
+}: { 
+  roomType: string;
+  stylePreset: StylePreset;
+  colorTheme: ColorTheme;
+}) {
   const { scene } = useGLTF(`/models/${roomType}.glb`);
-  return <primitive object={scene} />;
+  const modelRef = useRef<THREE.Group>(null);
+  
+  // Store current material states for each mesh
+  const materialStatesRef = useRef<Map<string, MaterialState>>(new Map());
+  
+  // Target material configuration
+  const [targetConfig, setTargetConfig] = useState({
+    roughness: MaterialConfig[stylePreset].roughness,
+    metalness: MaterialConfig[stylePreset].metalness,
+    color: new THREE.Color(ThemeColors[colorTheme].primary),
+  });
+
+  // Update target configuration when stylePreset or colorTheme changes
+  useEffect(() => {
+    setTargetConfig({
+      roughness: MaterialConfig[stylePreset].roughness,
+      metalness: MaterialConfig[stylePreset].metalness,
+      color: new THREE.Color(ThemeColors[colorTheme].primary),
+    });
+  }, [stylePreset, colorTheme]);
+
+  // Initialize material states on mount
+  useEffect(() => {
+    if (scene) {
+      scene.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+          const meshId = child.uuid;
+          if (!materialStatesRef.current.has(meshId)) {
+            materialStatesRef.current.set(meshId, {
+              color: child.material.color.clone(),
+              roughness: child.material.roughness,
+              metalness: child.material.metalness,
+            });
+          }
+        }
+      });
+    }
+  }, [scene]);
+
+  // Smooth transition for material properties using lerp
+  useFrame((state, delta) => {
+    if (!scene) return;
+    
+    const transitionSpeed = delta / 0.5; // 500ms transition duration
+    
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+        const meshId = child.uuid;
+        const currentState = materialStatesRef.current.get(meshId);
+        
+        if (currentState) {
+          // Lerp color
+          currentState.color.lerp(targetConfig.color, transitionSpeed);
+          child.material.color.copy(currentState.color);
+          
+          // Lerp roughness
+          currentState.roughness = THREE.MathUtils.lerp(
+            currentState.roughness,
+            targetConfig.roughness,
+            transitionSpeed
+          );
+          child.material.roughness = currentState.roughness;
+          
+          // Lerp metalness
+          currentState.metalness = THREE.MathUtils.lerp(
+            currentState.metalness,
+            targetConfig.metalness,
+            transitionSpeed
+          );
+          child.material.metalness = currentState.metalness;
+          
+          // Mark material as needing update
+          child.material.needsUpdate = true;
+        }
+      }
+    });
+  });
+
+  return <primitive ref={modelRef} object={scene} />;
 }
 
 function SceneLights({ lightingMood }: { lightingMood: 'morning' | 'evening' | 'night' }) {
@@ -140,7 +232,11 @@ export default function RoomCanvas({
 
         {/* 3D Room Model */}
         <Suspense fallback={null}>
-          <RoomModel roomType={roomType} />
+          <RoomModel 
+            roomType={roomType} 
+            stylePreset={stylePreset}
+            colorTheme={colorTheme}
+          />
         </Suspense>
       </Canvas>
     </div>
