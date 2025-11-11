@@ -96,6 +96,7 @@ export default function LightingSelector() {
               key={mood.value}
               initial="rest"
               whileHover="hover"
+              whileTap={{ scale: 0.97 }}
               variants={scaleIn}
               onClick={() => setLightingMood(mood.value)}
               className={`
@@ -106,10 +107,12 @@ export default function LightingSelector() {
                 transition-all
                 duration-300
                 border-2
+                touch-manipulation
+                min-h-[44px]
                 ${
                   lightingMood === mood.value
                     ? 'bg-white/20 border-white/50 shadow-lg'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30 active:bg-white/10'
                 }
               `}
             >

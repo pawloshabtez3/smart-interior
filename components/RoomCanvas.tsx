@@ -110,7 +110,13 @@ function RoomModel({
   return <primitive ref={modelRef} object={scene} />;
 }
 
-function SceneLights({ lightingMood }: { lightingMood: 'morning' | 'evening' | 'night' }) {
+function SceneLights({ 
+  lightingMood, 
+  isMobile 
+}: { 
+  lightingMood: 'morning' | 'evening' | 'night';
+  isMobile: boolean;
+}) {
   const ambientRef = useRef<THREE.AmbientLight>(null);
   const directionalRef = useRef<THREE.DirectionalLight>(null);
   
@@ -173,6 +179,9 @@ function SceneLights({ lightingMood }: { lightingMood: 'morning' | 'evening' | '
     }
   });
 
+  // Reduce shadow quality on mobile for better performance
+  const shadowMapSize = isMobile ? 512 : 1024;
+
   return (
     <>
       {/* Ambient light for overall scene illumination */}
@@ -184,9 +193,9 @@ function SceneLights({ lightingMood }: { lightingMood: 'morning' | 'evening' | '
         position={currentPosition.toArray()}
         intensity={currentDirectionalIntensity}
         color={currentColor}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        castShadow={!isMobile}
+        shadow-mapSize-width={shadowMapSize}
+        shadow-mapSize-height={shadowMapSize}
         shadow-camera-left={-10}
         shadow-camera-right={10}
         shadow-camera-top={10}
@@ -204,9 +213,34 @@ export default function RoomCanvas({
   colorTheme,
   lightingMood,
 }: RoomCanvasProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
-    <div className="w-full h-full">
-      <Canvas shadows>
+    <div 
+      className="w-full h-full touch-none"
+      style={{ touchAction: 'none' }}
+    >
+      <Canvas 
+        shadows={!isMobile}
+        gl={{ 
+          antialias: !isMobile,
+          powerPreference: isMobile ? 'low-power' : 'high-performance',
+          alpha: false
+        }}
+        dpr={isMobile ? [1, 1.5] : [1, 2]}
+      >
         {/* Camera setup with initial position and FOV */}
         <PerspectiveCamera
           makeDefault
@@ -224,11 +258,17 @@ export default function RoomCanvas({
           maxDistance={15}
           maxPolarAngle={Math.PI / 2}
           enablePan
-          panSpeed={0.5}
+          panSpeed={isMobile ? 0.8 : 0.5}
+          rotateSpeed={isMobile ? 0.8 : 1}
+          zoomSpeed={isMobile ? 0.8 : 1}
+          touches={{
+            ONE: THREE.TOUCH.ROTATE,
+            TWO: THREE.TOUCH.DOLLY_PAN
+          }}
         />
 
         {/* Scene lighting */}
-        <SceneLights lightingMood={lightingMood} />
+        <SceneLights lightingMood={lightingMood} isMobile={isMobile} />
 
         {/* 3D Room Model */}
         <Suspense fallback={null}>

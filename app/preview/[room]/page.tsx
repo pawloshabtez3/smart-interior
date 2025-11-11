@@ -67,8 +67,8 @@ export default function DesignInterfacePage() {
               absolute inset-0
               /* Desktop: Account for sidebar */
               lg:pr-96
-              /* Mobile: Account for bottom sheet */
-              max-lg:pb-[60vh]
+              /* Mobile: Full height with bottom padding for toggle button */
+              max-lg:pb-16
             "
           >
             <RoomCanvas
@@ -88,8 +88,8 @@ export default function DesignInterfacePage() {
             top-24 
             right-6 
             z-40
-            /* Hide on mobile when control panel is visible */
-            max-lg:top-auto max-lg:bottom-[calc(60vh+1.5rem)]
+            /* Adjust position on mobile */
+            max-lg:top-24 max-lg:right-4
           ">
             <SaveButton canvasRef={canvasRef} />
           </div>

@@ -8,6 +8,23 @@
     @apply text-gray-900 dark:text-gray-100;
     @apply font-sans antialiased;
   }
+
+  /* Mobile-specific optimizations */
+  @media (max-width: 1023px) {
+    * {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    
+    html {
+      -webkit-text-size-adjust: 100%;
+      touch-action: manipulation;
+    }
+    
+    body {
+      overscroll-behavior: none;
+    }
+  }
 }
 
 @layer utilities {
@@ -23,6 +40,19 @@
 
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
+  }
+
+  /* Touch-friendly utilities */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth scrolling for mobile */
+  .overscroll-contain {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

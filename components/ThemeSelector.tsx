@@ -27,6 +27,7 @@ export default function ThemeSelector() {
               key={style.value}
               initial="rest"
               whileHover="hover"
+              whileTap={{ scale: 0.97 }}
               variants={scaleIn}
               onClick={() => setStylePreset(style.value)}
               className={`
@@ -37,10 +38,12 @@ export default function ThemeSelector() {
                 transition-all
                 duration-300
                 border-2
+                touch-manipulation
+                min-h-[44px]
                 ${
                   stylePreset === style.value
                     ? 'bg-white/20 border-white/50 shadow-lg'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30 active:bg-white/10'
                 }
               `}
             >
@@ -73,6 +76,7 @@ export default function ThemeSelector() {
               key={theme.value}
               initial="rest"
               whileHover="hover"
+              whileTap={{ scale: 0.97 }}
               variants={scaleIn}
               onClick={() => setColorTheme(theme.value)}
               className={`
@@ -83,10 +87,12 @@ export default function ThemeSelector() {
                 transition-all
                 duration-300
                 border-2
+                touch-manipulation
+                min-h-[44px]
                 ${
                   colorTheme === theme.value
                     ? 'bg-white/20 border-white/50 shadow-lg'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30 active:bg-white/10'
                 }
               `}
             >

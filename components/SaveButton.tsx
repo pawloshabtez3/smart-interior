@@ -93,6 +93,8 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
           shadow-lg hover:shadow-xl
           disabled:opacity-50 disabled:cursor-not-allowed
           flex items-center gap-2
+          touch-manipulation
+          min-h-[44px]
         `}
       >
         {isCapturing ? (
