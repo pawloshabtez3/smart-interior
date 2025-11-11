@@ -132,7 +132,12 @@
   - Style with Tailwind CSS using responsive breakpoints
   - _Requirements: 9.1, 9.2, 9.3, 10.4_
 
-- [ ] 11. Implement room type selector in ControlPanel
+- [x] 11. Implement room type selector in ControlPanel
+
+
+
+
+
   - Add room type selection UI (Living Room, Bedroom, Office)
   - Connect to Zustand store using useStore hook
   - Call setRoomType action on selection

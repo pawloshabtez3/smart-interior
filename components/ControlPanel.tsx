@@ -1,6 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useStore } from '@/lib/store';
+import { ROOM_TYPES } from '@/lib/constants';
+import type { RoomType } from '@/lib/store';
 
 interface ControlPanelProps {
   className?: string;
@@ -12,7 +15,14 @@ const slideIn = {
   transition: { duration: 0.4, ease: 'easeOut' }
 };
 
+const scaleIn = {
+  rest: { scale: 1 },
+  hover: { scale: 1.05 },
+  transition: { duration: 0.2, ease: 'easeOut' }
+};
+
 export default function ControlPanel({ className = '' }: ControlPanelProps) {
+  const { roomType, setRoomType } = useStore();
   return (
     <motion.div
       initial="initial"
@@ -44,9 +54,50 @@ export default function ControlPanel({ className = '' }: ControlPanelProps) {
           Customize Your Space
         </h2>
         
-        {/* Placeholder for future controls */}
-        <div className="text-white/70 text-sm">
-          Controls will be added here
+        {/* Room Type Selector */}
+        <div>
+          <h3 className="text-sm font-medium text-white/90 mb-3">
+            Room Type
+          </h3>
+          <div className="grid grid-cols-1 gap-3">
+            {ROOM_TYPES.map((room) => (
+              <motion.button
+                key={room.value}
+                initial="rest"
+                whileHover="hover"
+                variants={scaleIn}
+                onClick={() => setRoomType(room.value)}
+                className={`
+                  relative
+                  p-4
+                  rounded-lg
+                  text-left
+                  transition-all
+                  duration-300
+                  border-2
+                  ${
+                    roomType === room.value
+                      ? 'bg-white/20 border-white/50 shadow-lg'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30'
+                  }
+                `}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-medium">
+                    {room.label}
+                  </span>
+                  {roomType === room.value && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="w-2 h-2 rounded-full bg-white"
+                    />
+                  )}
+                </div>
+              </motion.button>
+            ))}
+          </div>
         </div>
       </div>
     </motion.div>
