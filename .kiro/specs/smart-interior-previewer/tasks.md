@@ -162,7 +162,12 @@
   - Style with visual cards and Tailwind CSS
   - _Requirements: 3.1, 3.2, 3.4, 4.1, 4.2, 4.4_
 
-- [ ] 13. Create LightingSelector component
+- [x] 13. Create LightingSelector component
+
+
+
+
+
   - Create components/LightingSelector.tsx for lighting mood selection
   - Implement mood selector (Morning, Evening, Night)
   - Add visual preview icons for each mood
