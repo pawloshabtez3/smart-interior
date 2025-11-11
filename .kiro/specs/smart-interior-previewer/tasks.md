@@ -309,7 +309,14 @@
   - Test frame rate during interactions (target: 30fps minimum on desktop)
   - _Requirements: 6.5, 9.3_
 
-- [-] 23. Prepare for Vercel deployment
+- [ ] 23. Prepare for Vercel deployment
+
+
+
+
+
+
+
 
 
 
@@ -328,8 +335,13 @@
   - Create .gitignore with appropriate entries (.next, node_modules, etc.)
   - Test that all routes work correctly in production mode
   - _Requirements: All requirements must work in production environment_
+-
 
-- [ ] 24. Write component tests
+- [x] 24. Write component tests
+
+
+
+
   - Write tests for Header component (rendering, navigation)
   - Write tests for ThemeSelector component (selection, state updates)
   - Write tests for LightingSelector component (selection, state updates)
