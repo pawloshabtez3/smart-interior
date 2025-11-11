@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { STYLE_PRESETS, COLOR_THEMES, ThemeColors } from '@/lib/constants';
 import type { StylePreset, ColorTheme } from '@/lib/store';
+import { memo } from 'react';
 
 const scaleIn = {
   rest: { scale: 1 },
@@ -11,7 +12,7 @@ const scaleIn = {
   transition: { duration: 0.3, ease: 'easeOut' }
 };
 
-export default function ThemeSelector() {
+const ThemeSelector = memo(function ThemeSelector() {
   const { stylePreset, colorTheme, setStylePreset, setColorTheme } = useStore();
 
   return (
@@ -132,4 +133,6 @@ export default function ThemeSelector() {
       </div>
     </div>
   );
-}
+});
+
+export default ThemeSelector;

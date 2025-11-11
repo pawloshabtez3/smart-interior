@@ -2,10 +2,19 @@
 
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, useGLTF } from '@react-three/drei';
-import { Suspense, useRef, useEffect, useState } from 'react';
+import { Suspense, useRef, useEffect, useState, useMemo, memo } from 'react';
 import * as THREE from 'three';
 import { LightingConfig, MaterialConfig, ThemeColors, StylePreset, ColorTheme } from '@/lib/constants';
 import { detectWebGLSupport } from '@/lib/webgl-support';
+import { 
+  checkWebGLSupport, 
+  getOptimalWebGLSettings, 
+  getOptimalPixelRatio,
+  shouldEnableShadows,
+  setupIOSTouchFix,
+  detectBrowser
+} from '@/lib/browser-compat';
+import { createPerformanceMonitor, logPerformanceMetrics } from '@/lib/performance-monitor';
 
 interface RoomCanvasProps {
   roomType: 'living-room' | 'bedroom' | 'office';
@@ -21,7 +30,7 @@ interface MaterialState {
 }
 
 // Error fallback component for model loading failures
-function ModelLoadError({ 
+const ModelLoadError = memo(function ModelLoadError({ 
   roomType, 
   onRetry 
 }: { 
@@ -37,9 +46,9 @@ function ModelLoadError({
       </group>
     </mesh>
   );
-}
+});
 
-function RoomModel({ 
+const RoomModel = memo(function RoomModel({ 
   roomType, 
   stylePreset, 
   colorTheme,
@@ -67,21 +76,20 @@ function RoomModel({
   // Store current material states for each mesh
   const materialStatesRef = useRef<Map<string, MaterialState>>(new Map());
   
-  // Target material configuration
-  const [targetConfig, setTargetConfig] = useState({
+  // Memoize target material configuration to avoid unnecessary recalculations
+  const targetConfig = useMemo(() => ({
     roughness: MaterialConfig[stylePreset].roughness,
     metalness: MaterialConfig[stylePreset].metalness,
     color: new THREE.Color(ThemeColors[colorTheme].primary),
-  });
+  }), [stylePreset, colorTheme]);
+  
+  // Track target config in state for animation
+  const [currentTargetConfig, setCurrentTargetConfig] = useState(targetConfig);
 
   // Update target configuration when stylePreset or colorTheme changes
   useEffect(() => {
-    setTargetConfig({
-      roughness: MaterialConfig[stylePreset].roughness,
-      metalness: MaterialConfig[stylePreset].metalness,
-      color: new THREE.Color(ThemeColors[colorTheme].primary),
-    });
-  }, [stylePreset, colorTheme]);
+    setCurrentTargetConfig(targetConfig);
+  }, [targetConfig]);
 
   // Initialize material states on mount
   useEffect(() => {
@@ -114,13 +122,13 @@ function RoomModel({
         
         if (currentState) {
           // Lerp color
-          currentState.color.lerp(targetConfig.color, transitionSpeed);
+          currentState.color.lerp(currentTargetConfig.color, transitionSpeed);
           child.material.color.copy(currentState.color);
           
           // Lerp roughness
           currentState.roughness = THREE.MathUtils.lerp(
             currentState.roughness,
-            targetConfig.roughness,
+            currentTargetConfig.roughness,
             transitionSpeed
           );
           child.material.roughness = currentState.roughness;
@@ -128,7 +136,7 @@ function RoomModel({
           // Lerp metalness
           currentState.metalness = THREE.MathUtils.lerp(
             currentState.metalness,
-            targetConfig.metalness,
+            currentTargetConfig.metalness,
             transitionSpeed
           );
           child.material.metalness = currentState.metalness;
@@ -141,9 +149,9 @@ function RoomModel({
   });
 
   return <primitive ref={modelRef} object={scene} />;
-}
+});
 
-function SceneLights({ 
+const SceneLights = memo(function SceneLights({ 
   lightingMood, 
   isMobile 
 }: { 
@@ -153,34 +161,34 @@ function SceneLights({
   const ambientRef = useRef<THREE.AmbientLight>(null);
   const directionalRef = useRef<THREE.DirectionalLight>(null);
   
-  // Target values based on lighting mood
-  const [targetConfig, setTargetConfig] = useState(LightingConfig[lightingMood]);
+  // Memoize target lighting configuration
+  const targetConfig = useMemo(() => LightingConfig[lightingMood], [lightingMood]);
   
-  // Current interpolated values
-  const [currentAmbientIntensity, setCurrentAmbientIntensity] = useState(
-    LightingConfig[lightingMood].ambientIntensity
-  );
-  const [currentDirectionalIntensity, setCurrentDirectionalIntensity] = useState(
-    LightingConfig[lightingMood].directionalIntensity
-  );
-  const [currentPosition] = useState(
-    new THREE.Vector3(...LightingConfig[lightingMood].directionalPosition)
-  );
-  const [currentColor] = useState(
-    new THREE.Color(LightingConfig[lightingMood].color)
-  );
+  // Track target config in state for animation
+  const [currentTargetConfig, setCurrentTargetConfig] = useState(targetConfig);
+  
+  // Current interpolated values - memoize initial values
+  const initialAmbientIntensity = useMemo(() => targetConfig.ambientIntensity, []);
+  const initialDirectionalIntensity = useMemo(() => targetConfig.directionalIntensity, []);
+  const initialPosition = useMemo(() => new THREE.Vector3(...targetConfig.directionalPosition), []);
+  const initialColor = useMemo(() => new THREE.Color(targetConfig.color), []);
+  
+  const [currentAmbientIntensity, setCurrentAmbientIntensity] = useState(initialAmbientIntensity);
+  const [currentDirectionalIntensity, setCurrentDirectionalIntensity] = useState(initialDirectionalIntensity);
+  const [currentPosition] = useState(initialPosition);
+  const [currentColor] = useState(initialColor);
 
   // Update target configuration when lightingMood changes
   useEffect(() => {
-    setTargetConfig(LightingConfig[lightingMood]);
-  }, [lightingMood]);
+    setCurrentTargetConfig(targetConfig);
+  }, [targetConfig]);
 
   // Smooth transition using lerp in animation frame
   useFrame((state, delta) => {
     const transitionSpeed = delta / 0.8; // 800ms transition duration
     
     // Lerp ambient intensity
-    const targetAmbient = targetConfig.ambientIntensity;
+    const targetAmbient = currentTargetConfig.ambientIntensity;
     const newAmbient = THREE.MathUtils.lerp(currentAmbientIntensity, targetAmbient, transitionSpeed);
     setCurrentAmbientIntensity(newAmbient);
     
@@ -189,7 +197,7 @@ function SceneLights({
     }
 
     // Lerp directional intensity
-    const targetDirectional = targetConfig.directionalIntensity;
+    const targetDirectional = currentTargetConfig.directionalIntensity;
     const newDirectional = THREE.MathUtils.lerp(
       currentDirectionalIntensity,
       targetDirectional,
@@ -201,19 +209,25 @@ function SceneLights({
       directionalRef.current.intensity = newDirectional;
       
       // Lerp directional position
-      const targetPos = new THREE.Vector3(...targetConfig.directionalPosition);
+      const targetPos = new THREE.Vector3(...currentTargetConfig.directionalPosition);
       currentPosition.lerp(targetPos, transitionSpeed);
       directionalRef.current.position.copy(currentPosition);
       
       // Lerp directional color
-      const targetColor = new THREE.Color(targetConfig.color);
+      const targetColor = new THREE.Color(currentTargetConfig.color);
       currentColor.lerp(targetColor, transitionSpeed);
       directionalRef.current.color.copy(currentColor);
     }
   });
 
-  // Reduce shadow quality on mobile for better performance
-  const shadowMapSize = isMobile ? 512 : 1024;
+  // Memoize shadow configuration to avoid recalculation on every render
+  const shadowConfig = useMemo(() => {
+    const browser = detectBrowser();
+    return {
+      shadowMapSize: isMobile ? 512 : (browser.isFirefox ? 1024 : 2048),
+      enableShadowCasting: shouldEnableShadows() && !isMobile,
+    };
+  }, [isMobile]);
 
   return (
     <>
@@ -226,9 +240,9 @@ function SceneLights({
         position={currentPosition.toArray()}
         intensity={currentDirectionalIntensity}
         color={currentColor}
-        castShadow={!isMobile}
-        shadow-mapSize-width={shadowMapSize}
-        shadow-mapSize-height={shadowMapSize}
+        castShadow={shadowConfig.enableShadowCasting}
+        shadow-mapSize-width={shadowConfig.shadowMapSize}
+        shadow-mapSize-height={shadowConfig.shadowMapSize}
         shadow-camera-left={-10}
         shadow-camera-right={10}
         shadow-camera-top={10}
@@ -238,7 +252,7 @@ function SceneLights({
       />
     </>
   );
-}
+});
 
 export default function RoomCanvas({
   roomType,
@@ -251,27 +265,67 @@ export default function RoomCanvas({
   const [modelError, setModelError] = useState<Error | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
-  // Detect WebGL support
+  // Detect WebGL support with enhanced browser compatibility check
   useEffect(() => {
-    const supported = detectWebGLSupport();
-    setWebglSupported(supported);
+    const webglInfo = checkWebGLSupport();
+    setWebglSupported(webglInfo.supported);
     
-    if (!supported) {
+    if (!webglInfo.supported) {
       console.error('WebGL is not supported in this browser');
+    } else {
+      console.log('WebGL detected:', {
+        version: webglInfo.version,
+        renderer: webglInfo.renderer,
+        vendor: webglInfo.vendor,
+      });
     }
   }, []);
 
-  // Detect mobile viewport
+  // Detect mobile viewport and browser
   useEffect(() => {
+    const browser = detectBrowser();
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 768 || browser.isMobile);
     };
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Setup iOS touch fixes
+  useEffect(() => {
+    if (!canvasContainerRef.current) return;
+    
+    const cleanup = setupIOSTouchFix(canvasContainerRef.current);
+    return cleanup;
+  }, []);
+
+  // Performance monitoring in development
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+    
+    const monitor = createPerformanceMonitor((metrics) => {
+      // Log performance metrics every second in development
+      if (metrics.fps < 30) {
+        console.warn('Performance warning: FPS below 30', metrics);
+      }
+    });
+    
+    monitor.start();
+    
+    // Log metrics every 5 seconds
+    const logInterval = setInterval(() => {
+      logPerformanceMetrics(monitor);
+    }, 5000);
+    
+    return () => {
+      monitor.stop();
+      clearInterval(logInterval);
+    };
   }, []);
 
   // Handle model loading errors
@@ -396,22 +450,37 @@ export default function RoomCanvas({
     );
   }
 
+  // Memoize WebGL settings to avoid recalculation on every render
+  const webglSettings = useMemo(() => getOptimalWebGLSettings(), []);
+  const pixelRatio = useMemo(() => getOptimalPixelRatio(), []);
+  const enableShadows = useMemo(() => shouldEnableShadows() && !isMobile, [isMobile]);
+
   return (
     <div 
+      ref={canvasContainerRef}
       className="w-full h-full touch-none"
-      style={{ touchAction: 'none' }}
+      style={{ 
+        touchAction: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none'
+      }}
     >
       <Canvas 
-        shadows={!isMobile}
+        shadows={enableShadows}
         gl={{ 
-          antialias: !isMobile,
-          powerPreference: isMobile ? 'low-power' : 'high-performance',
-          alpha: false
+          ...webglSettings,
+          // Safari-specific: preserve drawing buffer for screenshots
+          preserveDrawingBuffer: true,
         }}
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        dpr={pixelRatio}
         onCreated={({ gl }) => {
           // Log WebGL context creation for debugging
           console.log('WebGL context created successfully');
+          console.log('Renderer info:', {
+            antialias: gl.getContextAttributes()?.antialias,
+            powerPreference: gl.getContextAttributes()?.powerPreference,
+          });
         }}
       >
         {/* Camera setup with initial position and FOV */}

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { isLocalStorageAvailable } from './browser-compat';
 
 // Type definitions
 export type RoomType = 'living-room' | 'bedroom' | 'office';
@@ -98,9 +99,9 @@ export const useStore = create<DesignStore>((set, get) => ({
         return;
       }
 
-      // Check if localStorage is available
-      if (!window.localStorage) {
-        console.warn('localStorage is not available, using default configuration');
+      // Check if localStorage is available (handles private mode, quota issues)
+      if (!isLocalStorageAvailable()) {
+        console.warn('localStorage is not available (may be in private/incognito mode), using default configuration');
         return;
       }
 
@@ -181,19 +182,9 @@ export const useStore = create<DesignStore>((set, get) => ({
         return;
       }
 
-      // Check if localStorage is available
-      if (!window.localStorage) {
-        console.warn('localStorage is not available, cannot save configuration');
-        return;
-      }
-
-      // Check localStorage quota
-      try {
-        const testKey = '__storage_test__';
-        localStorage.setItem(testKey, 'test');
-        localStorage.removeItem(testKey);
-      } catch (quotaError) {
-        console.error('localStorage quota exceeded or unavailable:', quotaError);
+      // Check if localStorage is available (handles private mode, quota issues)
+      if (!isLocalStorageAvailable()) {
+        console.warn('localStorage is not available (may be in private/incognito mode), cannot save configuration');
         return;
       }
 

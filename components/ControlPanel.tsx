@@ -6,7 +6,7 @@ import { ROOM_TYPES } from '@/lib/constants';
 import type { RoomType } from '@/lib/store';
 import ThemeSelector from './ThemeSelector';
 import LightingSelector from './LightingSelector';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo, useMemo } from 'react';
 
 interface ControlPanelProps {
   className?: string;
@@ -31,7 +31,7 @@ const scaleIn = {
   transition: { duration: 0.2, ease: 'easeOut' }
 };
 
-export default function ControlPanel({ className = '' }: ControlPanelProps) {
+const ControlPanel = memo(function ControlPanel({ className = '' }: ControlPanelProps) {
   const { roomType, setRoomType } = useStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -48,12 +48,12 @@ export default function ControlPanel({ className = '' }: ControlPanelProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Toggle bottom sheet on mobile
-  const togglePanel = () => {
+  // Toggle bottom sheet on mobile - memoize callback
+  const togglePanel = useMemo(() => () => {
     if (isMobile) {
       setIsExpanded(!isExpanded);
     }
-  };
+  }, [isMobile, isExpanded]);
   
   return (
     <>
@@ -267,4 +267,6 @@ export default function ControlPanel({ className = '' }: ControlPanelProps) {
       )}
     </>
   );
-}
+});
+
+export default ControlPanel;

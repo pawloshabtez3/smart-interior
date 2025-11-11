@@ -1,15 +1,30 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import type { RoomType } from '@/lib/store';
 import { ROOM_TYPES } from '@/lib/constants';
 import Header from '@/components/Header';
-import RoomCanvas from '@/components/RoomCanvas';
 import ControlPanel from '@/components/ControlPanel';
 import SaveButton from '@/components/SaveButton';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { initBrowserCompatibility } from '@/lib/browser-compat';
+
+// Lazy load the heavy 3D canvas component for better initial load performance
+const RoomCanvas = lazy(() => import('@/components/RoomCanvas'));
+
+// Loading fallback component for RoomCanvas
+function CanvasLoader() {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-gray-900">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-white text-lg">Loading 3D Environment...</p>
+      </div>
+    </div>
+  );
+}
 
 export default function DesignInterfacePage() {
   const params = useParams();
@@ -47,8 +62,12 @@ export default function DesignInterfacePage() {
     }
   }, [params.room, roomType, setRoomType, router]);
 
-  // Initialize store from localStorage on mount
+  // Initialize browser compatibility and store from localStorage on mount
   useEffect(() => {
+    // Initialize browser compatibility fixes
+    initBrowserCompatibility();
+    
+    // Load saved configuration
     loadFromLocalStorage();
   }, [loadFromLocalStorage]);
 
@@ -74,12 +93,14 @@ export default function DesignInterfacePage() {
                 transition-all duration-300 ease-out
               "
             >
-              <RoomCanvas
-                roomType={roomType}
-                stylePreset={stylePreset}
-                colorTheme={colorTheme}
-                lightingMood={lightingMood}
-              />
+              <Suspense fallback={<CanvasLoader />}>
+                <RoomCanvas
+                  roomType={roomType}
+                  stylePreset={stylePreset}
+                  colorTheme={colorTheme}
+                  lightingMood={lightingMood}
+                />
+              </Suspense>
             </div>
 
             {/* Control Panel - responsive positioning */}

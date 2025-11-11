@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { LIGHTING_MOODS } from '@/lib/constants';
 import type { LightingMood } from '@/lib/store';
+import { memo } from 'react';
 
 const scaleIn = {
   rest: { scale: 1 },
@@ -78,7 +79,7 @@ const moodColors: Record<LightingMood, string> = {
   night: 'text-blue-300',
 };
 
-export default function LightingSelector() {
+const LightingSelector = memo(function LightingSelector() {
   const { lightingMood, setLightingMood } = useStore();
 
   return (
@@ -141,4 +142,6 @@ export default function LightingSelector() {
       </div>
     </div>
   );
-}
+});
+
+export default LightingSelector;

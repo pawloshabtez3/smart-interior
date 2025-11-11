@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, RefObject } from 'react';
+import { useState, RefObject, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { useStore } from '@/lib/store';
+import { detectBrowser, ensureCanvasToBlobSupport } from '@/lib/browser-compat';
 
 interface SaveButtonProps {
   canvasRef: RefObject<HTMLDivElement>;
@@ -23,6 +24,11 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
     message: string;
   } | null>(null);
   const roomType = useStore((state) => state.roomType);
+
+  // Ensure canvas.toBlob support (Safari polyfill)
+  useEffect(() => {
+    ensureCanvasToBlobSupport();
+  }, []);
 
   const handleSaveSnapshot = async () => {
     if (!canvasRef.current) {
@@ -47,21 +53,64 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
 
       console.log('Starting snapshot capture...');
 
-      // Capture the canvas element using html2canvas
-      const canvas = await html2canvas(canvasRef.current, {
+      // Detect browser for specific handling
+      const browser = detectBrowser();
+      
+      // Browser-specific canvas capture settings
+      const captureOptions: any = {
         backgroundColor: '#000000',
-        scale: 2,
+        scale: browser.isMobile ? 1 : 2, // Lower scale on mobile for performance
         logging: false,
         useCORS: true,
         allowTaint: false,
         removeContainer: true,
-      });
+      };
+
+      // Safari-specific: Add timeout to ensure canvas is ready
+      if (browser.isSafari) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Capture the canvas element using html2canvas
+      const canvas = await html2canvas(canvasRef.current, captureOptions);
 
       console.log('Snapshot captured, creating blob...');
 
-      // Convert canvas to blob with error handling
+      // Convert canvas to blob with error handling and browser compatibility
       await new Promise<void>((resolve, reject) => {
         try {
+          // Check if toBlob is available (should be after polyfill)
+          if (!canvas.toBlob) {
+            // Fallback to dataURL method for very old browsers
+            try {
+              const dataURL = canvas.toDataURL('image/png');
+              const link = document.createElement('a');
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+              const filename = `interior-design-${roomType}-${timestamp}.png`;
+              
+              link.href = dataURL;
+              link.download = filename;
+              link.style.display = 'none';
+              document.body.appendChild(link);
+              link.click();
+              
+              setTimeout(() => {
+                document.body.removeChild(link);
+              }, 100);
+
+              setFeedback({
+                type: 'success',
+                message: 'Snapshot saved successfully!',
+              });
+              setTimeout(() => setFeedback(null), 3000);
+              resolve();
+              return;
+            } catch (fallbackError) {
+              reject(new Error('Canvas export not supported in this browser'));
+              return;
+            }
+          }
+
           canvas.toBlob((blob) => {
             if (!blob) {
               reject(new Error('Failed to create image blob'));
@@ -86,11 +135,16 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
               // Trigger download
               link.click();
               
-              // Clean up
+              // Clean up - longer timeout for Safari
+              const browser = detectBrowser();
+              const cleanupDelay = browser.isSafari ? 500 : 100;
+              
               setTimeout(() => {
-                document.body.removeChild(link);
+                if (document.body.contains(link)) {
+                  document.body.removeChild(link);
+                }
                 URL.revokeObjectURL(url);
-              }, 100);
+              }, cleanupDelay);
 
               console.log('Snapshot downloaded successfully');
 

@@ -282,7 +282,12 @@
   - Verify models load correctly in RoomCanvas component
   - _Requirements: 2.2, 3.2, 4.2_
 
-- [ ] 21. Perform cross-browser testing and fixes
+- [x] 21. Perform cross-browser testing and fixes
+
+
+
+
+
   - Test application on Chrome, Firefox, Safari, and Edge
   - Verify WebGL rendering across browsers
   - Test localStorage functionality across browsers
@@ -290,7 +295,12 @@
   - Fix any browser-specific issues
   - _Requirements: All requirements must work across browsers_
 
-- [ ] 22. Optimize performance and bundle size
+- [x] 22. Optimize performance and bundle size
+
+
+
+
+
   - Implement lazy loading for 3D models using React.lazy or dynamic imports
   - Memoize expensive computations in components using useMemo
   - Optimize re-renders with React.memo for pure components
@@ -299,7 +309,14 @@
   - Test frame rate during interactions (target: 30fps minimum on desktop)
   - _Requirements: 6.5, 9.3_
 
-- [ ] 23. Prepare for Vercel deployment
+- [-] 23. Prepare for Vercel deployment
+
+
+
+
+
+
+
   - Verify next.config.js is properly configured for production
   - Test production build locally with `npm run build` and `npm start`
   - Ensure all environment variables are documented (none required for MVP)

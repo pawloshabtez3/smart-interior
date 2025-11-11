@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "analyze": "node scripts/analyze-bundle.js",
+    "test:performance": "node scripts/test-performance.js"
   },
   "keywords": [],
   "author": "",
