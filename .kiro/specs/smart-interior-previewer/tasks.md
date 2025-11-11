@@ -146,7 +146,9 @@
   - Style with Tailwind CSS for visual cards
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 12. Create ThemeSelector component
+- [-] 12. Create ThemeSelector component
+
+
   - Create components/ThemeSelector.tsx for style and color selection
   - Implement style preset selector (Modern, Boho, Minimalist)
   - Implement color theme selector (Warm, Cool, Neutral)
