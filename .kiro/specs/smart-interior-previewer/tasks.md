@@ -91,7 +91,10 @@
   - Set up scene with proper camera controls (orbit, zoom, pan)
   - _Requirements: 2.2, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [-] 8. Implement dynamic lighting system in RoomCanvas
+- [x] 8. Implement dynamic lighting system in RoomCanvas
+
+
+
 
 
   - Create lighting configuration logic based on lightingMood prop
@@ -100,8 +103,10 @@
   - Add smooth transitions for lighting changes using lerp (800ms duration)
   - Configure shadow casting for directional light
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
+-
 
 - [ ] 9. Implement dynamic material system in RoomCanvas
+
   - Create material update logic based on stylePreset and colorTheme props
   - Implement material property updates (color, roughness, metalness)
   - Apply style-specific characteristics (modern: low roughness, boho: high roughness, minimalist: medium)
