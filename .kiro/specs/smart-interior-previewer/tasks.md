@@ -76,7 +76,12 @@
   - Add Framer Motion animation for header entry
   - _Requirements: 1.4, 9.3_
 
-- [ ] 7. Implement RoomCanvas component for 3D rendering
+- [x] 7. Implement RoomCanvas component for 3D rendering
+
+
+
+
+
   - Create components/RoomCanvas.tsx with Canvas from @react-three/fiber
   - Accept props: roomType, stylePreset, colorTheme, lightingMood
   - Set up PerspectiveCamera with initial position [5, 3, 5] and FOV 75
@@ -86,7 +91,9 @@
   - Set up scene with proper camera controls (orbit, zoom, pan)
   - _Requirements: 2.2, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 8. Implement dynamic lighting system in RoomCanvas
+- [-] 8. Implement dynamic lighting system in RoomCanvas
+
+
   - Create lighting configuration logic based on lightingMood prop
   - Implement ambient light intensity updates (morning: 0.8, evening: 0.5, night: 0.3)
   - Implement directional light position and color updates based on mood
