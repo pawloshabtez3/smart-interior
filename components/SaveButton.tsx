@@ -1,12 +1,20 @@
 'use client';
 
 import { useState, RefObject } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { useStore } from '@/lib/store';
 
 interface SaveButtonProps {
   canvasRef: RefObject<HTMLDivElement>;
 }
+
+const scaleIn = {
+  rest: { scale: 1 },
+  hover: { scale: 1.05 },
+  tap: { scale: 0.95 },
+  transition: { duration: 0.2, ease: 'easeOut' }
+};
 
 export default function SaveButton({ canvasRef }: SaveButtonProps) {
   const [isCapturing, setIsCapturing] = useState(false);
@@ -81,14 +89,17 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
 
   return (
     <div className="relative">
-      <button
+      <motion.button
         onClick={handleSaveSnapshot}
         disabled={isCapturing}
+        initial="rest"
+        whileHover="hover"
+        whileTap="tap"
+        variants={scaleIn}
         className={`
           px-6 py-3 rounded-lg font-medium text-white
           bg-gradient-to-r from-blue-500 to-purple-600
           hover:from-blue-600 hover:to-purple-700
-          active:scale-95
           transition-all duration-300
           shadow-lg hover:shadow-xl
           disabled:opacity-50 disabled:cursor-not-allowed
@@ -99,11 +110,13 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
       >
         {isCapturing ? (
           <>
-            <svg
-              className="animate-spin h-5 w-5"
+            <motion.svg
+              className="h-5 w-5"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             >
               <circle
                 className="opacity-25"
@@ -118,7 +131,7 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
                 fill="currentColor"
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
-            </svg>
+            </motion.svg>
             <span>Capturing...</span>
           </>
         ) : (
@@ -140,25 +153,31 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
             <span>Save Snapshot</span>
           </>
         )}
-      </button>
+      </motion.button>
 
       {/* Feedback message */}
-      {feedback && (
-        <div
-          className={`
-            absolute top-full mt-2 left-1/2 transform -translate-x-1/2
-            px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap
-            animate-fade-in shadow-lg
-            ${
-              feedback.type === 'success'
-                ? 'bg-green-500 text-white'
-                : 'bg-red-500 text-white'
-            }
-          `}
-        >
-          {feedback.message}
-        </div>
-      )}
+      <AnimatePresence>
+        {feedback && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className={`
+              absolute top-full mt-2 left-1/2 transform -translate-x-1/2
+              px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap
+              shadow-lg
+              ${
+                feedback.type === 'success'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-red-500 text-white'
+              }
+            `}
+          >
+            {feedback.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

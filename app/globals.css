@@ -38,8 +38,43 @@
     text-wrap: balance;
   }
 
+  /* Animation utilities */
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.4s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  /* Smooth transitions for state changes */
+  .transition-smooth {
+    transition: all 0.3s ease-out;
+  }
+
+  .transition-smooth-slow {
+    transition: all 0.5s ease-out;
+  }
+
+  .transition-smooth-slower {
+    transition: all 0.8s ease-out;
+  }
+
+  /* Hover feedback with fast response */
+  .hover-feedback {
+    transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+  }
+
+  .hover-feedback:hover {
+    transform: scale(1.02);
+  }
+
+  .hover-feedback:active {
+    transform: scale(0.98);
   }
 
   /* Touch-friendly utilities */
@@ -64,5 +99,27 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }

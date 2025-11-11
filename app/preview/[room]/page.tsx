@@ -69,6 +69,7 @@ export default function DesignInterfacePage() {
               lg:pr-96
               /* Mobile: Full height with bottom padding for toggle button */
               max-lg:pb-16
+              transition-all duration-300 ease-out
             "
           >
             <RoomCanvas
