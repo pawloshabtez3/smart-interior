@@ -192,7 +192,12 @@
   - Ensure responsive layout for all controls
   - _Requirements: 2.4, 3.4, 4.4, 5.4_
 
-- [ ] 15. Create SaveButton component with snapshot functionality
+- [x] 15. Create SaveButton component with snapshot functionality
+
+
+
+
+
   - Create components/SaveButton.tsx with button UI
   - Implement snapshot capture using html2canvas
   - Accept canvasRef prop to target the 3D canvas element
