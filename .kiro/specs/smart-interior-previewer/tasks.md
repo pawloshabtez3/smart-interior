@@ -50,7 +50,12 @@
   - Export room type options, style presets, color themes, and lighting moods as constants
   - _Requirements: 3.1, 3.2, 4.1, 4.2, 5.1, 5.2_
 
-- [ ] 5. Build landing page with hero section
+- [x] 5. Build landing page with hero section
+
+
+
+
+
   - Create app/page.tsx with hero section layout
   - Implement tagline "Visualize your dream space" with typography styling
   - Add Framer Motion animations for hero section entry (fadeInUp variant)
