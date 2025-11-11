@@ -5,6 +5,7 @@ import { OrbitControls, PerspectiveCamera, useGLTF } from '@react-three/drei';
 import { Suspense, useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { LightingConfig, MaterialConfig, ThemeColors, StylePreset, ColorTheme } from '@/lib/constants';
+import { detectWebGLSupport } from '@/lib/webgl-support';
 
 interface RoomCanvasProps {
   roomType: 'living-room' | 'bedroom' | 'office';
@@ -19,16 +20,48 @@ interface MaterialState {
   metalness: number;
 }
 
+// Error fallback component for model loading failures
+function ModelLoadError({ 
+  roomType, 
+  onRetry 
+}: { 
+  roomType: string; 
+  onRetry: () => void;
+}) {
+  return (
+    <mesh>
+      <boxGeometry args={[2, 2, 2]} />
+      <meshStandardMaterial color="#666666" />
+      <group>
+        {/* Simple fallback visualization */}
+      </group>
+    </mesh>
+  );
+}
+
 function RoomModel({ 
   roomType, 
   stylePreset, 
-  colorTheme 
+  colorTheme,
+  onError
 }: { 
   roomType: string;
   stylePreset: StylePreset;
   colorTheme: ColorTheme;
+  onError: (error: Error) => void;
 }) {
-  const { scene } = useGLTF(`/models/${roomType}.glb`);
+  // Load model with error handling using try-catch
+  let scene: THREE.Group;
+  
+  try {
+    const gltf = useGLTF(`/models/${roomType}.glb`);
+    scene = gltf.scene;
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error('Failed to load 3D model');
+    console.error(`Failed to load model for ${roomType}:`, err);
+    onError(err);
+    return null;
+  }
   const modelRef = useRef<THREE.Group>(null);
   
   // Store current material states for each mesh
@@ -214,6 +247,20 @@ export default function RoomCanvas({
   lightingMood,
 }: RoomCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const [webglSupported, setWebglSupported] = useState(true);
+  const [modelError, setModelError] = useState<Error | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Detect WebGL support
+  useEffect(() => {
+    const supported = detectWebGLSupport();
+    setWebglSupported(supported);
+    
+    if (!supported) {
+      console.error('WebGL is not supported in this browser');
+    }
+  }, []);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -226,6 +273,128 @@ export default function RoomCanvas({
     
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Handle model loading errors
+  const handleModelError = (error: Error) => {
+    console.error('Model loading error:', error);
+    setModelError(error);
+  };
+
+  // Retry mechanism with exponential backoff
+  const handleRetry = () => {
+    if (retryCount >= 3) {
+      console.error('Maximum retry attempts reached');
+      return;
+    }
+
+    setIsRetrying(true);
+    setModelError(null);
+
+    // Exponential backoff: 1s, 2s, 4s
+    const delay = Math.pow(2, retryCount) * 1000;
+    
+    console.log(`Retrying model load (attempt ${retryCount + 1}) after ${delay}ms...`);
+
+    setTimeout(() => {
+      setRetryCount(prev => prev + 1);
+      setIsRetrying(false);
+    }, delay);
+  };
+
+  // Reset retry count when room type changes
+  useEffect(() => {
+    setRetryCount(0);
+    setModelError(null);
+  }, [roomType]);
+
+  // WebGL not supported fallback
+  if (!webglSupported) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white p-8">
+        <div className="text-center max-w-md">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-16 w-16 mx-auto mb-4 text-red-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <h2 className="text-2xl font-bold mb-4">WebGL Not Supported</h2>
+          <p className="text-gray-400 mb-4">
+            Your browser doesn't support WebGL, which is required for 3D visualization.
+          </p>
+          <p className="text-sm text-gray-500">
+            Please try using a modern browser like Chrome, Firefox, Safari, or Edge.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Model loading error fallback
+  if (modelError && !isRetrying) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white p-8">
+        <div className="text-center max-w-md">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-16 w-16 mx-auto mb-4 text-yellow-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h2 className="text-2xl font-bold mb-4">Failed to Load 3D Model</h2>
+          <p className="text-gray-400 mb-6">
+            {modelError.message || 'Unable to load the room model. Please try again.'}
+          </p>
+          {retryCount < 3 ? (
+            <button
+              onClick={handleRetry}
+              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg font-medium transition-colors"
+            >
+              Retry {retryCount > 0 && `(${retryCount}/3)`}
+            </button>
+          ) : (
+            <div className="text-sm text-gray-500">
+              <p className="mb-2">Maximum retry attempts reached.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state during retry
+  if (isRetrying) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Retrying...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -240,6 +409,10 @@ export default function RoomCanvas({
           alpha: false
         }}
         dpr={isMobile ? [1, 1.5] : [1, 2]}
+        onCreated={({ gl }) => {
+          // Log WebGL context creation for debugging
+          console.log('WebGL context created successfully');
+        }}
       >
         {/* Camera setup with initial position and FOV */}
         <PerspectiveCamera
@@ -276,6 +449,7 @@ export default function RoomCanvas({
             roomType={roomType} 
             stylePreset={stylePreset}
             colorTheme={colorTheme}
+            onError={handleModelError}
           />
         </Suspense>
       </Canvas>

@@ -9,6 +9,7 @@ import Header from '@/components/Header';
 import RoomCanvas from '@/components/RoomCanvas';
 import ControlPanel from '@/components/ControlPanel';
 import SaveButton from '@/components/SaveButton';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function DesignInterfacePage() {
   const params = useParams();
@@ -52,50 +53,52 @@ export default function DesignInterfacePage() {
   }, [loadFromLocalStorage]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Header */}
-      <Header />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        {/* Header */}
+        <Header />
 
-      {/* Main content area */}
-      <main className="pt-20 h-screen">
-        {/* Responsive layout container */}
-        <div className="relative h-full w-full">
-          {/* 3D Canvas - fills available space */}
-          <div 
-            ref={canvasRef}
-            className="
-              absolute inset-0
-              /* Desktop: Account for sidebar */
-              lg:pr-96
-              /* Mobile: Full height with bottom padding for toggle button */
-              max-lg:pb-16
-              transition-all duration-300 ease-out
-            "
-          >
-            <RoomCanvas
-              roomType={roomType}
-              stylePreset={stylePreset}
-              colorTheme={colorTheme}
-              lightingMood={lightingMood}
-            />
+        {/* Main content area */}
+        <main className="pt-20 h-screen">
+          {/* Responsive layout container */}
+          <div className="relative h-full w-full">
+            {/* 3D Canvas - fills available space */}
+            <div 
+              ref={canvasRef}
+              className="
+                absolute inset-0
+                /* Desktop: Account for sidebar */
+                lg:pr-96
+                /* Mobile: Full height with bottom padding for toggle button */
+                max-lg:pb-16
+                transition-all duration-300 ease-out
+              "
+            >
+              <RoomCanvas
+                roomType={roomType}
+                stylePreset={stylePreset}
+                colorTheme={colorTheme}
+                lightingMood={lightingMood}
+              />
+            </div>
+
+            {/* Control Panel - responsive positioning */}
+            <ControlPanel />
+
+            {/* Save Button - positioned in top right */}
+            <div className="
+              fixed 
+              top-24 
+              right-6 
+              z-40
+              /* Adjust position on mobile */
+              max-lg:top-24 max-lg:right-4
+            ">
+              <SaveButton canvasRef={canvasRef} />
+            </div>
           </div>
-
-          {/* Control Panel - responsive positioning */}
-          <ControlPanel />
-
-          {/* Save Button - positioned in top right */}
-          <div className="
-            fixed 
-            top-24 
-            right-6 
-            z-40
-            /* Adjust position on mobile */
-            max-lg:top-24 max-lg:right-4
-          ">
-            <SaveButton canvasRef={canvasRef} />
-          </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </ErrorBoundary>
   );
 }

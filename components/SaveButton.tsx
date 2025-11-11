@@ -26,9 +26,10 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
 
   const handleSaveSnapshot = async () => {
     if (!canvasRef.current) {
+      console.error('Canvas reference is not available');
       setFeedback({
         type: 'error',
-        message: 'Canvas not found',
+        message: 'Canvas not found. Please try again.',
       });
       setTimeout(() => setFeedback(null), 3000);
       return;
@@ -38,50 +39,104 @@ export default function SaveButton({ canvasRef }: SaveButtonProps) {
     setFeedback(null);
 
     try {
+      // Validate canvas element
+      const canvasElement = canvasRef.current.querySelector('canvas');
+      if (!canvasElement) {
+        throw new Error('Canvas element not found in container');
+      }
+
+      console.log('Starting snapshot capture...');
+
       // Capture the canvas element using html2canvas
       const canvas = await html2canvas(canvasRef.current, {
         backgroundColor: '#000000',
         scale: 2,
         logging: false,
         useCORS: true,
+        allowTaint: false,
+        removeContainer: true,
       });
 
-      // Convert canvas to blob
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          throw new Error('Failed to create image blob');
+      console.log('Snapshot captured, creating blob...');
+
+      // Convert canvas to blob with error handling
+      await new Promise<void>((resolve, reject) => {
+        try {
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error('Failed to create image blob'));
+              return;
+            }
+
+            try {
+              // Generate filename with timestamp
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+              const filename = `interior-design-${roomType}-${timestamp}.png`;
+
+              console.log(`Creating download for ${filename}...`);
+
+              // Create download link
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              link.style.display = 'none';
+              document.body.appendChild(link);
+              
+              // Trigger download
+              link.click();
+              
+              // Clean up
+              setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              }, 100);
+
+              console.log('Snapshot downloaded successfully');
+
+              // Show success feedback
+              setFeedback({
+                type: 'success',
+                message: 'Snapshot saved successfully!',
+              });
+              setTimeout(() => setFeedback(null), 3000);
+
+              resolve();
+            } catch (downloadError) {
+              console.error('Error during download:', downloadError);
+              reject(downloadError);
+            }
+          }, 'image/png');
+        } catch (blobError) {
+          console.error('Error creating blob:', blobError);
+          reject(blobError);
         }
-
-        // Generate filename with timestamp
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-        const filename = `interior-design-${roomType}-${timestamp}.png`;
-
-        // Create download link
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Clean up the blob URL
-        URL.revokeObjectURL(url);
-
-        // Show success feedback
-        setFeedback({
-          type: 'success',
-          message: 'Snapshot saved successfully!',
-        });
-        setTimeout(() => setFeedback(null), 3000);
-      }, 'image/png');
+      });
     } catch (error) {
       console.error('Failed to capture snapshot:', error);
+      
+      // Provide user-friendly error messages based on error type
+      let errorMessage = 'Failed to save snapshot. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Canvas')) {
+          errorMessage = 'Unable to access canvas. Please refresh the page.';
+        } else if (error.message.includes('blob')) {
+          errorMessage = 'Failed to create image. Your browser may not support this feature.';
+        } else if (error.message.includes('quota') || error.message.includes('storage')) {
+          errorMessage = 'Insufficient storage space. Please free up some space.';
+        } else if (error.message.includes('permission')) {
+          errorMessage = 'Permission denied. Please check browser settings.';
+        }
+        
+        console.error('Error details:', error.message);
+      }
+      
       setFeedback({
         type: 'error',
-        message: 'Failed to save snapshot. Please try again.',
+        message: errorMessage,
       });
-      setTimeout(() => setFeedback(null), 3000);
+      setTimeout(() => setFeedback(null), 5000);
     } finally {
       setIsCapturing(false);
     }

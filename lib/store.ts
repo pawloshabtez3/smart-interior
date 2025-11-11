@@ -94,6 +94,13 @@ export const useStore = create<DesignStore>((set, get) => ({
     try {
       if (typeof window === 'undefined') {
         // Server-side rendering - skip localStorage
+        console.log('Server-side rendering detected, skipping localStorage load');
+        return;
+      }
+
+      // Check if localStorage is available
+      if (!window.localStorage) {
+        console.warn('localStorage is not available, using default configuration');
         return;
       }
 
@@ -104,11 +111,39 @@ export const useStore = create<DesignStore>((set, get) => ({
         return;
       }
 
-      const config: StoredConfig = JSON.parse(saved);
+      // Parse and validate the saved configuration
+      let config: StoredConfig;
+      try {
+        config = JSON.parse(saved);
+      } catch (parseError) {
+        console.error('Failed to parse saved configuration:', parseError);
+        console.log('Clearing corrupted data and using defaults');
+        // Clear corrupted data
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (removeError) {
+          console.error('Failed to clear corrupted data:', removeError);
+        }
+        return;
+      }
 
       // Validate version (for future migrations)
       if (config.version !== STORAGE_VERSION) {
-        console.warn('Configuration version mismatch, using defaults');
+        console.warn(`Configuration version mismatch (saved: ${config.version}, current: ${STORAGE_VERSION}), using defaults`);
+        return;
+      }
+
+      // Validate configuration values
+      const validRoomTypes: RoomType[] = ['living-room', 'bedroom', 'office'];
+      const validStylePresets: StylePreset[] = ['modern', 'boho', 'minimalist'];
+      const validColorThemes: ColorTheme[] = ['warm', 'cool', 'neutral'];
+      const validLightingMoods: LightingMood[] = ['morning', 'evening', 'night'];
+
+      if (!validRoomTypes.includes(config.roomType) ||
+          !validStylePresets.includes(config.stylePreset) ||
+          !validColorThemes.includes(config.colorTheme) ||
+          !validLightingMoods.includes(config.lightingMood)) {
+        console.warn('Invalid configuration values detected, using defaults');
         return;
       }
 
@@ -120,10 +155,20 @@ export const useStore = create<DesignStore>((set, get) => ({
         lightingMood: config.lightingMood,
       });
 
-      console.log('Configuration loaded from localStorage');
+      console.log('Configuration loaded from localStorage successfully');
     } catch (error) {
       console.error('Failed to load configuration from localStorage:', error);
       // Fallback to defaults - no action needed as defaults are already set
+      
+      // Try to clear potentially corrupted data
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.removeItem(STORAGE_KEY);
+          console.log('Cleared potentially corrupted localStorage data');
+        }
+      } catch (clearError) {
+        console.error('Failed to clear localStorage:', clearError);
+      }
     }
   },
 
@@ -132,6 +177,23 @@ export const useStore = create<DesignStore>((set, get) => ({
     try {
       if (typeof window === 'undefined') {
         // Server-side rendering - skip localStorage
+        console.log('Server-side rendering detected, skipping localStorage save');
+        return;
+      }
+
+      // Check if localStorage is available
+      if (!window.localStorage) {
+        console.warn('localStorage is not available, cannot save configuration');
+        return;
+      }
+
+      // Check localStorage quota
+      try {
+        const testKey = '__storage_test__';
+        localStorage.setItem(testKey, 'test');
+        localStorage.removeItem(testKey);
+      } catch (quotaError) {
+        console.error('localStorage quota exceeded or unavailable:', quotaError);
         return;
       }
 
@@ -145,10 +207,20 @@ export const useStore = create<DesignStore>((set, get) => ({
         lastUpdated: Date.now(),
       };
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-      console.log('Configuration saved to localStorage');
+      const serialized = JSON.stringify(config);
+      localStorage.setItem(STORAGE_KEY, serialized);
+      console.log('Configuration saved to localStorage successfully');
     } catch (error) {
       console.error('Failed to save configuration to localStorage:', error);
+      
+      // Provide more specific error information
+      if (error instanceof Error) {
+        if (error.name === 'QuotaExceededError') {
+          console.error('localStorage quota exceeded. Consider clearing browser data.');
+        } else if (error.name === 'SecurityError') {
+          console.error('localStorage access denied. Check browser privacy settings.');
+        }
+      }
     }
   },
 }));
